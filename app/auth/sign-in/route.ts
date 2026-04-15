@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
   const email = String(formData.get("email") || "").trim();
   const password = String(formData.get("password") || "");
   const redirectTo = new URL("/", request.url);
+  const cookieNames: string[] = [];
   let response = NextResponse.redirect(redirectTo, { status: 303 });
 
   const supabase = createServerClient(
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
           response = NextResponse.redirect(redirectTo, { status: 303 });
 
           cookiesToSet.forEach(({ name, value, options }) => {
+            cookieNames.push(name);
             response.cookies.set(name, value, options);
           });
         }
@@ -43,6 +45,14 @@ export async function POST(request: NextRequest) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", error.message);
     return NextResponse.redirect(loginUrl, { status: 303 });
+  }
+
+  if (request.nextUrl.searchParams.get("debug") === "1") {
+    return NextResponse.json({
+      ok: true,
+      setAllCalled: cookieNames.length > 0,
+      cookieNames
+    });
   }
 
   return response;
