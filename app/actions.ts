@@ -291,8 +291,46 @@ export async function updateTradesCompleted(accountId: string, date: string, tra
   return { ok: true };
 }
 
-export async function markCheckinDone(accountId: string, date: string) {
+export async function markCheckinDone(accountId: string, date: string, tradesCompleted: number) {
   const { supabase } = await requireProfile();
+  const completed = Math.max(0, Math.min(5, Math.trunc(tradesCompleted)));
+
+  if (completed <= 0) {
+    return { ok: false, error: "Check at least one trade first." };
+  }
+
+  const { data: checkin, error: readError } = await supabase
+    .from("daily_checkins")
+    .select("status,trades_target")
+    .eq("account_id", accountId)
+    .eq("date", date)
+    .single();
+
+  if (readError) {
+    return { ok: false, error: readError.message };
+  }
+
+  if (checkin.status === "skipped") {
+    return { ok: false, error: "Skipped check-in cannot be completed." };
+  }
+
+  if (checkin.status !== "done") {
+    const { error: updateError } = await supabase
+      .from("daily_checkins")
+      .update({
+        trades_completed: Math.min(completed, checkin.trades_target ?? 0),
+        status: "in_progress"
+      })
+      .eq("account_id", accountId)
+      .eq("date", date)
+      .neq("status", "done")
+      .neq("status", "skipped");
+
+    if (updateError) {
+      return { ok: false, error: updateError.message };
+    }
+  }
+
   const { error } = await supabase.rpc("mark_daily_checkin_done", {
     p_account_id: accountId,
     p_date: date

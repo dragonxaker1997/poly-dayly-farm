@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
-import { markCheckinDone, skipCheckin, updatePortfolioUrl, updateTradesCompleted } from "@/app/actions";
+import { useEffect, useState, useTransition } from "react";
+import { markCheckinDone, skipCheckin, updatePortfolioUrl } from "@/app/actions";
 import type { CheckinStatus } from "@/lib/types";
 
 export type TradesRotationRow = {
@@ -43,6 +43,28 @@ export function TradesRotationTable({
   );
   const [isPending, startTransition] = useTransition();
 
+  useEffect(() => {
+    setLocalRows((current) =>
+      current.map((row) => {
+        if (row.status === "done" || row.status === "skipped") return row;
+
+        const stored = window.localStorage.getItem(tradeStorageKey(date, row.accountId));
+        if (!stored) return row;
+
+        const storedCompleted = Number(stored);
+        if (!Number.isFinite(storedCompleted)) return row;
+
+        const tradesCompleted = Math.max(0, Math.min(row.tradesTarget, Math.trunc(storedCompleted)));
+
+        return {
+          ...row,
+          tradesCompleted,
+          status: tradesCompleted > 0 ? "in_progress" : "planned"
+        };
+      })
+    );
+  }, [date]);
+
   function patchRow(accountId: string, patch: Partial<LocalRow>) {
     setLocalRows((current) =>
       current.map((row) => (row.accountId === accountId ? { ...row, ...patch } : row))
@@ -59,12 +81,7 @@ export function TradesRotationTable({
       warning: undefined
     });
 
-    startTransition(async () => {
-      const result = await updateTradesCompleted(row.accountId, date, nextCompleted);
-      if (!result.ok) {
-        patchRow(row.accountId, { warning: result.error });
-      }
-    });
+    window.localStorage.setItem(tradeStorageKey(date, row.accountId), String(nextCompleted));
   }
 
   function complete(row: LocalRow) {
@@ -75,9 +92,10 @@ export function TradesRotationTable({
 
     patchRow(row.accountId, { warning: undefined });
     startTransition(async () => {
-      const result = await markCheckinDone(row.accountId, date);
+      const result = await markCheckinDone(row.accountId, date, row.tradesCompleted);
       if (result.ok) {
         patchRow(row.accountId, { status: "done" });
+        window.localStorage.removeItem(tradeStorageKey(date, row.accountId));
       } else {
         patchRow(row.accountId, { warning: result.error });
       }
@@ -90,6 +108,7 @@ export function TradesRotationTable({
       const result = await skipCheckin(row.accountId, date);
       if (result.ok) {
         patchRow(row.accountId, { status: "skipped" });
+        window.localStorage.removeItem(tradeStorageKey(date, row.accountId));
       } else {
         patchRow(row.accountId, { warning: result.error });
       }
@@ -246,4 +265,8 @@ export function TradesRotationTable({
       </table>
     </section>
   );
+}
+
+function tradeStorageKey(date: string, accountId: string) {
+  return `farm-trades:${date}:${accountId}`;
 }
