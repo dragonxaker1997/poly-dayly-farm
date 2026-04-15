@@ -1,7 +1,6 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 function setCookie(name: string, value: string, maxAge: number) {
@@ -10,7 +9,6 @@ function setCookie(name: string, value: string, maxAge: number) {
 }
 
 export function LoginForm({ initialError }: { initialError?: string }) {
-  const router = useRouter();
   const [error, setError] = useState(initialError ?? "");
   const [isPending, startTransition] = useTransition();
 
@@ -41,8 +39,7 @@ export function LoginForm({ initialError }: { initialError?: string }) {
       setCookie("fm-access-token", data.session.access_token, data.session.expires_in);
       setCookie("fm-refresh-token", data.session.refresh_token, 60 * 60 * 24 * 30);
 
-      router.replace("/");
-      router.refresh();
+      window.location.assign("/");
     });
   }
 

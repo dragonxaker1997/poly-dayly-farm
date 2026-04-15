@@ -2,7 +2,15 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 export function getServerAccessToken() {
-  return cookies().get("fm-access-token")?.value ?? null;
+  const token = cookies().get("fm-access-token")?.value;
+
+  if (!token) return null;
+
+  try {
+    return decodeURIComponent(token);
+  } catch {
+    return token;
+  }
 }
 
 export function createServerSupabaseClient() {
