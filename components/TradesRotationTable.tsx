@@ -20,9 +20,9 @@ type LocalRow = TradesRotationRow & {
 };
 
 function rowClass(status: CheckinStatus, completed: number, target: number) {
-  if (status === "skipped") return "bg-slate-50 text-slate-400";
-  if (status === "done" || (target > 0 && completed >= target)) return "bg-emerald-50";
-  return "bg-white";
+  if (status === "skipped") return "bg-slate-950/60 text-slate-500";
+  if (status === "done" || (target > 0 && completed >= target)) return "bg-emerald-950/35";
+  return "bg-panel";
 }
 
 export function TradesRotationTable({
@@ -92,16 +92,16 @@ export function TradesRotationTable({
 
   if (!localRows.length) {
     return (
-      <div className="rounded-lg border border-line bg-panel p-5 text-sm text-slate-600">
+      <div className="rounded-lg border border-line bg-panel p-5 text-sm text-slate-400">
         {emptyText}
       </div>
     );
   }
 
   return (
-    <section className="overflow-hidden rounded-lg border border-line bg-panel shadow-sm">
+    <section className="overflow-hidden rounded-lg border border-line bg-panel/95 shadow-sm">
       <table className="w-full table-fixed text-left text-sm">
-        <thead className="border-b border-line bg-slate-100 text-xs uppercase text-slate-500">
+        <thead className="border-b border-line bg-slate-950/70 text-xs uppercase text-slate-400">
           <tr>
             <th className="w-[28%] px-3 py-2">Wallet</th>
             <th className="w-[34%] px-3 py-2">Trades</th>
@@ -121,7 +121,7 @@ export function TradesRotationTable({
               >
                 <td className="px-3 py-2 align-middle">
                   <div className="flex items-center gap-2">
-                    <Link href={row.accountHref} className="font-semibold text-ink hover:underline">
+                    <Link href={row.accountHref} className="font-semibold text-slate-100 hover:text-sky-300">
                       {row.wallet}
                     </Link>
                     {row.portfolioUrl ? (
@@ -129,13 +129,13 @@ export function TradesRotationTable({
                         href={row.portfolioUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded border border-line px-1.5 py-0.5 text-xs text-slate-600 hover:bg-white"
+                        className="rounded border border-line bg-slate-950/40 px-1.5 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
                       >
                         open
                       </a>
                     ) : null}
                   </div>
-                  {row.warning ? <p className="mt-1 text-xs font-medium text-red-600">{row.warning}</p> : null}
+                  {row.warning ? <p className="mt-1 text-xs font-medium text-red-300">{row.warning}</p> : null}
                 </td>
                 <td className="px-3 py-2 align-middle">
                   <div className="flex items-center gap-1.5">
@@ -149,8 +149,8 @@ export function TradesRotationTable({
                           onClick={() => setCompleted(row, checked ? index : index + 1)}
                           className={`h-5 w-5 rounded border text-xs font-bold ${
                             checked
-                              ? "border-emerald-600 bg-emerald-600 text-white"
-                              : "border-slate-300 bg-white text-transparent hover:border-slate-500"
+                              ? "border-emerald-400 bg-emerald-500 text-slate-950"
+                              : "border-slate-600 bg-slate-950 text-transparent hover:border-sky-400"
                           } disabled:cursor-not-allowed disabled:opacity-60`}
                           aria-label={`Trade ${index + 1}`}
                         >
@@ -170,7 +170,7 @@ export function TradesRotationTable({
                       disabled={row.status === "done" || isPending}
                       onClick={() => complete(row)}
                       className={`rounded-md px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 ${
-                        ready ? "bg-emerald-700 hover:bg-emerald-800" : "bg-ink hover:bg-slate-800"
+                        ready ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400" : "bg-ink text-slate-950 hover:bg-sky-300"
                       }`}
                     >
                       Mark Done
@@ -179,12 +179,12 @@ export function TradesRotationTable({
                       type="button"
                       disabled={closed || isPending}
                       onClick={() => skip(row)}
-                      className="rounded-md border border-line px-3 py-1.5 text-xs font-semibold hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-md border border-line px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Skip
                     </button>
                     {ready && row.status !== "done" ? (
-                      <span className="text-xs font-medium text-emerald-700">Ready to complete</span>
+                      <span className="text-xs font-medium text-emerald-300">Ready to complete</span>
                     ) : null}
                   </div>
                 </td>

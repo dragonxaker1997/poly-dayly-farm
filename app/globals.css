@@ -8,8 +8,10 @@
 
 body {
   margin: 0;
-  background: #f5f7fa;
-  color: #12151c;
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 32rem),
+    linear-gradient(180deg, #0b1220 0%, #070b12 42%, #05070d 100%);
+  color: #e5edf7;
 }
 
 a {
@@ -21,9 +23,37 @@ input,
 textarea,
 select {
   width: 100%;
+  background: #0b1220;
+  color: #e5edf7;
 }
 
 .focus-ring:focus {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #38bdf8;
   outline-offset: 2px;
+}
+
+.text-slate-400,
+.text-slate-500,
+.text-slate-600,
+.text-slate-700 {
+  color: #94a3b8;
+}
+
+.text-blue-700 {
+  color: #7dd3fc;
+}
+
+.bg-slate-50,
+.bg-slate-100 {
+  background-color: #0b1220;
+}
+
+.hover\:bg-slate-50:hover,
+.hover\:bg-slate-100:hover,
+.hover\:bg-white:hover {
+  background-color: #172033;
+}
+
+.shadow-sm {
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
 }

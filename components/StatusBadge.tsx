@@ -1,13 +1,13 @@
 import type { CheckinStatus } from "@/lib/types";
 
 const styles: Record<string, string> = {
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  resting: "bg-slate-50 text-slate-700 border-slate-200",
-  archived: "bg-zinc-100 text-zinc-500 border-zinc-200",
-  planned: "bg-blue-50 text-blue-700 border-blue-200",
-  in_progress: "bg-amber-50 text-amber-700 border-amber-200",
-  done: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  skipped: "bg-red-50 text-red-700 border-red-200"
+  active: "bg-emerald-500/12 text-emerald-300 border-emerald-500/30",
+  resting: "bg-slate-500/12 text-slate-300 border-slate-500/30",
+  archived: "bg-zinc-500/10 text-zinc-400 border-zinc-500/30",
+  planned: "bg-sky-500/12 text-sky-300 border-sky-500/30",
+  in_progress: "bg-amber-500/12 text-amber-300 border-amber-500/30",
+  done: "bg-emerald-500/12 text-emerald-300 border-emerald-500/30",
+  skipped: "bg-red-500/12 text-red-300 border-red-500/30"
 };
 
 export function StatusBadge({ value }: { value: string | CheckinStatus }) {
