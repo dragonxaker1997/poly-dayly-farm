@@ -17,6 +17,8 @@ export type Account = {
   base_comment: string | null;
   status: AccountStatus;
   assigned_worker_id: string | null;
+  total_trading_days: number;
+  total_trades_count: number;
   created_at: string;
   updated_at: string;
   assigned_worker?: Profile | null;
@@ -41,6 +43,8 @@ export type DailyCheckin = {
   completed_at: string | null;
   comment: string | null;
   trades_count_manual: number | null;
+  trades_target: number;
+  trades_completed: number;
   extra_notes: string | null;
   created_at: string;
   updated_at: string;

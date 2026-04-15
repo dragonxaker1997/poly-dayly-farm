@@ -18,6 +18,10 @@ function numberOrNull(value: FormDataEntryValue | null) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function randomTradesTarget() {
+  return Math.floor(Math.random() * 4) + 2;
+}
+
 export async function generateTodayRotation() {
   const { supabase, user } = await requireProfile("owner");
   const date = todayISO();
@@ -72,6 +76,8 @@ export async function generateTodayRotation() {
       completed_at: null,
       comment: null,
       trades_count_manual: null,
+      trades_target: randomTradesTarget(),
+      trades_completed: 0,
       extra_notes: null
     }));
 
@@ -117,6 +123,8 @@ export async function setRotationStatus(formData: FormData) {
         completed_at: null,
         comment: null,
         trades_count_manual: null,
+        trades_target: randomTradesTarget(),
+        trades_completed: 0,
         extra_notes: null
       },
       { onConflict: "date,account_id", ignoreDuplicates: true }
@@ -155,6 +163,90 @@ export async function updateCheckin(formData: FormData) {
   revalidatePath("/worker");
   revalidatePath("/rotation");
   revalidatePath(`/accounts/${accountId}`);
+}
+
+export async function updateTradesCompleted(accountId: string, date: string, tradesCompleted: number) {
+  const { supabase } = await requireProfile();
+  const completed = Math.max(0, Math.min(5, Math.trunc(tradesCompleted)));
+
+  const { data: checkin, error: readError } = await supabase
+    .from("daily_checkins")
+    .select("status,trades_target")
+    .eq("account_id", accountId)
+    .eq("date", date)
+    .single();
+
+  if (readError) {
+    return { ok: false, error: readError.message };
+  }
+
+  if (checkin.status === "done" || checkin.status === "skipped") {
+    return { ok: false, error: "This check-in is already closed." };
+  }
+
+  const nextCompleted = Math.min(completed, checkin.trades_target ?? 0);
+  const nextStatus: CheckinStatus = nextCompleted > 0 ? "in_progress" : "planned";
+
+  const { error } = await supabase
+    .from("daily_checkins")
+    .update({
+      trades_completed: nextCompleted,
+      status: nextStatus
+    })
+    .eq("account_id", accountId)
+    .eq("date", date);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/owner");
+  revalidatePath("/worker");
+  revalidatePath("/rotation");
+  revalidatePath(`/accounts/${accountId}`);
+
+  return { ok: true };
+}
+
+export async function markCheckinDone(accountId: string, date: string) {
+  const { supabase } = await requireProfile();
+  const { error } = await supabase.rpc("mark_daily_checkin_done", {
+    p_account_id: accountId,
+    p_date: date
+  });
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/owner");
+  revalidatePath("/worker");
+  revalidatePath("/rotation");
+  revalidatePath("/accounts");
+  revalidatePath(`/accounts/${accountId}`);
+
+  return { ok: true };
+}
+
+export async function skipCheckin(accountId: string, date: string) {
+  const { supabase } = await requireProfile();
+  const { error } = await supabase.rpc("skip_daily_checkin", {
+    p_account_id: accountId,
+    p_date: date
+  });
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/owner");
+  revalidatePath("/worker");
+  revalidatePath("/rotation");
+  revalidatePath(`/accounts/${accountId}`);
+
+  return { ok: true };
 }
 
 export async function createAccount(formData: FormData) {

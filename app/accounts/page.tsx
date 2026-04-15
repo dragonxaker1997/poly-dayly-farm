@@ -31,10 +31,10 @@ export default async function AccountsPage() {
           <thead className="bg-slate-50 text-slate-600">
             <tr>
               <th className="px-5 py-3">Name</th>
-              <th className="px-5 py-3">Wallet</th>
-              <th className="px-5 py-3">Status</th>
+              <th className="px-5 py-3">Days</th>
+              <th className="px-5 py-3">Trades</th>
               <th className="px-5 py-3">Worker</th>
-              <th className="px-5 py-3">Portfolio</th>
+              <th className="px-5 py-3">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -45,16 +45,10 @@ export default async function AccountsPage() {
                     {account.name}
                   </Link>
                 </td>
-                <td className="px-5 py-3 text-slate-600">{account.wallet_label || account.wallet_address || "none"}</td>
-                <td className="px-5 py-3"><StatusBadge value={account.status} /></td>
+                <td className="px-5 py-3 font-semibold">{account.total_trading_days ?? 0}</td>
+                <td className="px-5 py-3 font-semibold">{account.total_trades_count ?? 0}</td>
                 <td className="px-5 py-3">{account.assigned_worker?.email ?? "unassigned"}</td>
-                <td className="px-5 py-3">
-                  {account.portfolio_url ? (
-                    <a href={account.portfolio_url} target="_blank" rel="noreferrer" className="text-blue-700 hover:underline">
-                      open
-                    </a>
-                  ) : "none"}
-                </td>
+                <td className="px-5 py-3"><StatusBadge value={account.status} /></td>
               </tr>
             ))}
           </tbody>
