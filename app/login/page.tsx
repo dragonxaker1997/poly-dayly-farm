@@ -1,3 +1,5 @@
+import { LoginForm } from "@/app/login/LoginForm";
+
 export default function LoginPage({
   searchParams
 }: {
@@ -12,39 +14,7 @@ export default function LoginPage({
           <p className="mt-2 text-sm text-slate-600">Ручная ротация аккаунтов и daily check-in.</p>
         </div>
 
-        {searchParams.error ? (
-          <div className="mb-5 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            {searchParams.error === "missing-profile"
-              ? "Для пользователя не найден profile. Проверь profiles table."
-              : searchParams.error}
-          </div>
-        ) : null}
-
-        <form action="/auth/sign-in" method="post" className="space-y-4">
-          <label className="block text-sm font-medium">
-            Email
-            <input
-              className="focus-ring mt-1 rounded-md border border-line px-3 py-2"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-            />
-          </label>
-          <label className="block text-sm font-medium">
-            Password
-            <input
-              className="focus-ring mt-1 rounded-md border border-line px-3 py-2"
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-            />
-          </label>
-          <button className="focus-ring w-full rounded-md bg-ink px-4 py-2.5 text-sm font-semibold text-slate-950">
-            Sign in
-          </button>
-        </form>
+        <LoginForm initialError={searchParams.error} />
       </section>
     </main>
   );
