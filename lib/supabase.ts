@@ -28,7 +28,7 @@ export function createServerSupabaseClient() {
         setAll(cookiesToSet: CookieToSet[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
+              cookieStore.set(name, value, { ...options, path: "/" });
             });
           } catch {
             // Server Components cannot set cookies; middleware handles refreshes.

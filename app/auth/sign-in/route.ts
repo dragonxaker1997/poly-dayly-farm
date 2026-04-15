@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
           response = NextResponse.redirect(redirectTo, { status: 303 });
 
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
+            response.cookies.set(name, value, { ...options, path: "/" });
           });
         }
       }
