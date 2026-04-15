@@ -22,6 +22,17 @@ function randomTradesTarget() {
   return Math.floor(Math.random() * 4) + 2;
 }
 
+function randomTradeTargets(count: number) {
+  const values = Array.from({ length: count }, (_, index) => 2 + (index % 4));
+
+  for (let index = values.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [values[index], values[swapIndex]] = [values[swapIndex], values[index]];
+  }
+
+  return values;
+}
+
 export async function generateTodayRotation() {
   const { supabase, user } = await requireProfile("owner");
   const date = todayISO();
@@ -66,8 +77,31 @@ export async function generateTodayRotation() {
 
   if (upsertError) throw new Error(upsertError.message);
 
-  const activeCheckins = rotation
-    .filter((row) => row.is_active)
+  const activeRotation = rotation.filter((row) => row.is_active);
+  const tradeTargets = randomTradeTargets(activeRotation.length);
+  const targetByAccount = new Map(
+    activeRotation.map((row, index) => [row.account_id, tradeTargets[index]])
+  );
+
+  const existingCheckinsResult = activeRotation.length
+    ? await supabase
+        .from("daily_checkins")
+        .select("account_id,status,trades_completed")
+        .eq("date", date)
+        .in(
+          "account_id",
+          activeRotation.map((row) => row.account_id)
+        )
+    : { data: [], error: null };
+
+  if (existingCheckinsResult.error) throw new Error(existingCheckinsResult.error.message);
+
+  const existingByAccount = new Map(
+    (existingCheckinsResult.data ?? []).map((checkin: any) => [checkin.account_id, checkin])
+  );
+
+  const activeCheckins = activeRotation
+    .filter((row) => !existingByAccount.has(row.account_id))
     .map((row) => ({
       date,
       account_id: row.account_id,
@@ -76,7 +110,7 @@ export async function generateTodayRotation() {
       completed_at: null,
       comment: null,
       trades_count_manual: null,
-      trades_target: randomTradesTarget(),
+      trades_target: targetByAccount.get(row.account_id) ?? randomTradesTarget(),
       trades_completed: 0,
       extra_notes: null
     }));
@@ -88,6 +122,26 @@ export async function generateTodayRotation() {
 
     if (checkinError) throw new Error(checkinError.message);
   }
+
+  await Promise.all(
+    activeRotation.map(async (row, index) => {
+      const existing = existingByAccount.get(row.account_id);
+
+      if (!existing || existing.status !== "planned" || existing.trades_completed > 0) {
+        return;
+      }
+
+      const { error: updateError } = await supabase
+        .from("daily_checkins")
+        .update({ trades_target: tradeTargets[index] })
+        .eq("date", date)
+        .eq("account_id", row.account_id)
+        .eq("status", "planned")
+        .eq("trades_completed", 0);
+
+      if (updateError) throw new Error(updateError.message);
+    })
+  );
 
   revalidatePath("/");
   revalidatePath("/owner");
