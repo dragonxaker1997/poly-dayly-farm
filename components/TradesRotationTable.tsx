@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { markCheckinDone, skipCheckin, updateTradesCompleted } from "@/app/actions";
+import { markCheckinDone, skipCheckin, updatePortfolioUrl, updateTradesCompleted } from "@/app/actions";
 import type { CheckinStatus } from "@/lib/types";
 
 export type TradesRotationRow = {
@@ -17,6 +17,8 @@ export type TradesRotationRow = {
 
 type LocalRow = TradesRotationRow & {
   warning?: string;
+  portfolioDraft?: string;
+  editingPortfolio?: boolean;
 };
 
 function rowClass(status: CheckinStatus, completed: number, target: number) {
@@ -28,13 +30,17 @@ function rowClass(status: CheckinStatus, completed: number, target: number) {
 export function TradesRotationTable({
   rows,
   date,
+  canEditPortfolio = false,
   emptyText = "No active accounts for today."
 }: {
   rows: TradesRotationRow[];
   date: string;
+  canEditPortfolio?: boolean;
   emptyText?: string;
 }) {
-  const [localRows, setLocalRows] = useState<LocalRow[]>(rows);
+  const [localRows, setLocalRows] = useState<LocalRow[]>(
+    rows.map((row) => ({ ...row, portfolioDraft: row.portfolioUrl ?? "" }))
+  );
   const [isPending, startTransition] = useTransition();
 
   function patchRow(accountId: string, patch: Partial<LocalRow>) {
@@ -90,6 +96,22 @@ export function TradesRotationTable({
     });
   }
 
+  function savePortfolio(row: LocalRow) {
+    patchRow(row.accountId, { warning: undefined });
+    startTransition(async () => {
+      const result = await updatePortfolioUrl(row.accountId, row.portfolioDraft ?? "");
+      if (result.ok) {
+        patchRow(row.accountId, {
+          portfolioUrl: result.portfolioUrl,
+          portfolioDraft: result.portfolioUrl ?? "",
+          editingPortfolio: false
+        });
+      } else {
+        patchRow(row.accountId, { warning: result.error });
+      }
+    });
+  }
+
   if (!localRows.length) {
     return (
       <div className="rounded-lg border border-line bg-panel p-5 text-sm text-slate-400">
@@ -124,17 +146,46 @@ export function TradesRotationTable({
                     <Link href={row.accountHref} className="font-semibold text-slate-100 hover:text-sky-300">
                       {row.wallet}
                     </Link>
-                    {row.portfolioUrl ? (
+                    {row.portfolioUrl && !row.editingPortfolio ? (
                       <a
                         href={row.portfolioUrl}
                         target="_blank"
                         rel="noreferrer"
                         className="rounded border border-line bg-slate-950/40 px-1.5 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
                       >
-                        open
+                        Profile
                       </a>
                     ) : null}
+                    {canEditPortfolio && row.portfolioUrl && !row.editingPortfolio ? (
+                      <button
+                        type="button"
+                        onClick={() => patchRow(row.accountId, { editingPortfolio: true })}
+                        className="rounded border border-line px-1.5 py-0.5 text-xs text-slate-400 hover:bg-slate-800"
+                      >
+                        Edit
+                      </button>
+                    ) : null}
                   </div>
+                  {canEditPortfolio && (!row.portfolioUrl || row.editingPortfolio) ? (
+                    <div className="mt-1 flex max-w-md items-center gap-1.5">
+                      <input
+                        value={row.portfolioDraft ?? ""}
+                        onChange={(event) =>
+                          patchRow(row.accountId, { portfolioDraft: event.target.value })
+                        }
+                        placeholder="https://polymarket.com/profile/..."
+                        className="h-7 rounded border border-line bg-slate-950 px-2 text-xs text-slate-100 placeholder:text-slate-600"
+                      />
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => savePortfolio(row)}
+                        className="h-7 rounded bg-ink px-2 text-xs font-semibold text-slate-950 hover:bg-sky-300 disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  ) : null}
                   {row.warning ? <p className="mt-1 text-xs font-medium text-red-300">{row.warning}</p> : null}
                 </td>
                 <td className="px-3 py-2 align-middle">

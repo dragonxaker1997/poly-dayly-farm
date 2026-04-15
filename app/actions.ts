@@ -226,6 +226,33 @@ export async function updateCheckin(formData: FormData) {
   revalidatePath(`/accounts/${accountId}`);
 }
 
+export async function updatePortfolioUrl(accountId: string, portfolioUrl: string) {
+  const { supabase } = await requireProfile("owner");
+  const url = portfolioUrl.trim();
+
+  if (url && !/^https?:\/\//i.test(url)) {
+    return { ok: false, error: "Use a full http/https URL." };
+  }
+
+  const { error } = await supabase
+    .from("accounts")
+    .update({ portfolio_url: url || null })
+    .eq("id", accountId);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/owner");
+  revalidatePath("/worker");
+  revalidatePath("/rotation");
+  revalidatePath("/accounts");
+  revalidatePath(`/accounts/${accountId}`);
+
+  return { ok: true, portfolioUrl: url || null };
+}
+
 export async function updateTradesCompleted(accountId: string, date: string, tradesCompleted: number) {
   const { supabase } = await requireProfile();
   const completed = Math.max(0, Math.min(5, Math.trunc(tradesCompleted)));

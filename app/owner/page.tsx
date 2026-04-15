@@ -72,6 +72,7 @@ export default async function OwnerDashboardPage() {
         <TradesRotationTable
           rows={tradeRows}
           date={date}
+          canEditPortfolio
           emptyText="Rotation for today is empty. Generate it first."
         />
       </section>

@@ -2,14 +2,13 @@ import Link from "next/link";
 import type { Profile } from "@/lib/types";
 
 const ownerLinks = [
-  ["Dashboard", "/owner"],
+  ["Today", "/owner"],
   ["Accounts", "/accounts"],
-  ["Today Rotation", "/rotation"],
   ["History", "/history"]
 ];
 
 const workerLinks = [
-  ["Dashboard", "/worker"],
+  ["Today", "/worker"],
   ["Accounts", "/accounts"],
   ["History", "/history"]
 ];
