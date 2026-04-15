@@ -37,11 +37,11 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) {
+  if (error || !data.session) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("error", error.message);
+    loginUrl.searchParams.set("error", error?.message ?? "No session returned");
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
