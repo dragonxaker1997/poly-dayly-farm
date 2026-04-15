@@ -288,11 +288,6 @@ export async function updateTradesCompleted(accountId: string, date: string, tra
     return { ok: false, error: error.message };
   }
 
-  revalidatePath("/owner");
-  revalidatePath("/worker");
-  revalidatePath("/rotation");
-  revalidatePath(`/accounts/${accountId}`);
-
   return { ok: true };
 }
 
