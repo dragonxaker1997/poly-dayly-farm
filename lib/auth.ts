@@ -1,12 +1,18 @@
 import { redirect } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { createServerSupabaseClient, getServerAccessToken } from "@/lib/supabase";
 import type { Profile, Role } from "@/lib/types";
 
 export async function getSessionProfile() {
   const supabase = createServerSupabaseClient();
+  const accessToken = getServerAccessToken();
+
+  if (!accessToken) {
+    return { supabase, user: null, profile: null };
+  }
+
   const {
     data: { user }
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser(accessToken);
 
   if (!user) {
     return { supabase, user: null, profile: null };

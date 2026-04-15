@@ -1,39 +1,27 @@
-import { createBrowserClient, createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
-type CookieToSet = {
-  name: string;
-  value: string;
-  options: CookieOptions;
-};
-
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+export function getServerAccessToken() {
+  return cookies().get("fm-access-token")?.value ?? null;
 }
 
 export function createServerSupabaseClient() {
-  const cookieStore = cookies();
+  const accessToken = getServerAccessToken();
 
-  return createServerClient(
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: CookieToSet[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, { ...options, path: "/" });
-            });
-          } catch {
-            // Server Components cannot set cookies; middleware handles refreshes.
-          }
-        }
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      },
+      global: {
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`
+            }
+          : {}
       }
     }
   );

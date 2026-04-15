@@ -1,49 +1,49 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-
-type CookieToSet = {
-  name: string;
-  value: string;
-  options: CookieOptions;
-};
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const email = String(formData.get("email") || "").trim();
   const password = String(formData.get("password") || "");
   const redirectTo = new URL("/", request.url);
-  let response = NextResponse.redirect(redirectTo, { status: 303 });
 
-  const supabase = createServerClient(
+  const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: CookieToSet[]) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
-
-          response = NextResponse.redirect(redirectTo, { status: 303 });
-
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, { ...options, path: "/" });
-          });
-        }
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
       }
     }
   );
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) {
+  if (error || !data.session) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("error", error.message);
+    loginUrl.searchParams.set("error", error?.message ?? "No session returned");
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
+
+  const response = NextResponse.redirect(redirectTo, { status: 303 });
+  const secure = request.nextUrl.protocol === "https:";
+
+  response.cookies.set("fm-access-token", data.session.access_token, {
+    httpOnly: true,
+    secure,
+    sameSite: "lax",
+    path: "/",
+    maxAge: data.session.expires_in
+  });
+
+  response.cookies.set("fm-refresh-token", data.session.refresh_token, {
+    httpOnly: true,
+    secure,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30
+  });
 
   return response;
 }
