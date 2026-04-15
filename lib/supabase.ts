@@ -1,35 +1,32 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-export function getServerAccessToken() {
-  const token = cookies().get("fm-access-token")?.value;
-
-  if (!token) return null;
-
-  try {
-    return decodeURIComponent(token);
-  } catch {
-    return token;
-  }
-}
+type CookieToSet = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
 
 export function createServerSupabaseClient() {
-  const accessToken = getServerAccessToken();
+  const cookieStore = cookies();
 
-  return createClient(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false
-      },
-      global: {
-        headers: accessToken
-          ? {
-              Authorization: `Bearer ${accessToken}`
-            }
-          : {}
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet: CookieToSet[]) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // Server Components cannot set cookies; middleware refreshes them.
+          }
+        }
       }
     }
   );
