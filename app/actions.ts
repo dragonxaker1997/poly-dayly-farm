@@ -49,6 +49,7 @@ export async function generateTodayRotation() {
     .from("daily_rotations")
     .select("account_id")
     .gte("date", sevenDaysAgo)
+    .lt("date", date)
     .eq("is_active", true);
 
   if (recentError) throw new Error(recentError.message);
@@ -63,7 +64,7 @@ export async function generateTodayRotation() {
       id: account.id,
       recent_active_days: recentCounts.get(account.id) ?? 0
     })),
-    date
+    `${date}-${Date.now()}-${Math.random()}`
   );
 
   const { error: upsertError } = await supabase.from("daily_rotations").upsert(
@@ -127,17 +128,23 @@ export async function generateTodayRotation() {
     activeRotation.map(async (row, index) => {
       const existing = existingByAccount.get(row.account_id);
 
-      if (!existing || existing.status !== "planned" || existing.trades_completed > 0) {
+      if (!existing || existing.status === "done" || existing.status === "skipped") {
         return;
       }
 
       const { error: updateError } = await supabase
         .from("daily_checkins")
-        .update({ trades_target: tradeTargets[index] })
+        .update({
+          status: "planned",
+          completed_by: null,
+          completed_at: null,
+          trades_target: tradeTargets[index],
+          trades_completed: 0
+        })
         .eq("date", date)
         .eq("account_id", row.account_id)
-        .eq("status", "planned")
-        .eq("trades_completed", 0);
+        .neq("status", "done")
+        .neq("status", "skipped");
 
       if (updateError) throw new Error(updateError.message);
     })
